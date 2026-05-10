@@ -1,0 +1,11 @@
+services:
+  api:
+    build: .
+    container_name: cdek-api
+    ports:
+      - "8000:8000"
+    environment:
+      JWT_SECRET: "change-me-in-prod"
+      JWT_ALGORITHM: "HS256"
+      JWT_EXPIRE_MINUTES: "60"
+    restart: unless-stopped

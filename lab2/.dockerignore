@@ -1,0 +1,14 @@
+__pycache__
+*.pyc
+.venv
+.git
+.gitignore
+.idea
+.vscode
+.pytest_cache
+tests
+scripts
+README.md
+openapi.yaml
+Dockerfile
+docker-compose.yamldocker compose up --build

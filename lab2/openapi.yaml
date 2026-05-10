@@ -1,0 +1,693 @@
+openapi: 3.1.0
+info:
+  title: CDEK-like Delivery API
+  description: Учебный сервис доставки. ДЗ-2 по курсу «Архитектура программных систем».
+  version: 0.1.0
+paths:
+  /auth/register:
+    post:
+      tags:
+      - auth
+      summary: Регистрация нового пользователя
+      operationId: register_auth_register_post
+      requestBody:
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/RegisterRequest'
+        required: true
+      responses:
+        '201':
+          description: Successful Response
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/UserResponse'
+        '409':
+          description: Login already exists
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ErrorResponse'
+        '422':
+          description: Validation Error
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/HTTPValidationError'
+  /auth/login:
+    post:
+      tags:
+      - auth
+      summary: Логин (OAuth2 password flow), возвращает JWT
+      description: 'Принимает form-data: `username`, `password`.
+
+        `username` трактуется как `login`.
+
+        Это даёт возможность использовать кнопку **Authorize** в Swagger UI.'
+      operationId: login_auth_login_post
+      requestBody:
+        content:
+          application/x-www-form-urlencoded:
+            schema:
+              $ref: '#/components/schemas/Body_login_auth_login_post'
+        required: true
+      responses:
+        '200':
+          description: Successful Response
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/TokenResponse'
+        '401':
+          description: Invalid credentials
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ErrorResponse'
+        '422':
+          description: Validation Error
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/HTTPValidationError'
+  /auth/login-json:
+    post:
+      tags:
+      - auth
+      summary: Логин по JSON (альтернатива form-data)
+      operationId: login_json_auth_login_json_post
+      requestBody:
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/LoginRequest'
+        required: true
+      responses:
+        '200':
+          description: Successful Response
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/TokenResponse'
+        '401':
+          description: Invalid credentials
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ErrorResponse'
+        '422':
+          description: Validation Error
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/HTTPValidationError'
+  /users/by-login/{login}:
+    get:
+      tags:
+      - users
+      summary: Поиск пользователя по логину
+      operationId: get_user_by_login_users_by_login__login__get
+      parameters:
+      - name: login
+        in: path
+        required: true
+        schema:
+          type: string
+          title: Login
+      responses:
+        '200':
+          description: Successful Response
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/UserResponse'
+        '404':
+          description: User not found
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ErrorResponse'
+        '422':
+          description: Validation Error
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/HTTPValidationError'
+  /users/search:
+    get:
+      tags:
+      - users
+      summary: Поиск пользователей по маске имени и/или фамилии
+      operationId: search_users_users_search_get
+      parameters:
+      - name: name
+        in: query
+        required: false
+        schema:
+          anyOf:
+          - type: string
+          - type: 'null'
+          description: Подстрока в имени (case-insensitive)
+          examples:
+          - Iv
+          title: Name
+        description: Подстрока в имени (case-insensitive)
+      - name: surname
+        in: query
+        required: false
+        schema:
+          anyOf:
+          - type: string
+          - type: 'null'
+          description: Подстрока в фамилии (case-insensitive)
+          examples:
+          - Pet
+          title: Surname
+        description: Подстрока в фамилии (case-insensitive)
+      responses:
+        '200':
+          description: Successful Response
+          content:
+            application/json:
+              schema:
+                type: array
+                items:
+                  $ref: '#/components/schemas/UserResponse'
+                title: Response Search Users Users Search Get
+        '422':
+          description: Validation Error
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/HTTPValidationError'
+  /parcels:
+    post:
+      tags:
+      - parcels
+      summary: Создание посылки от текущего пользователя (требуется JWT)
+      operationId: create_parcel_parcels_post
+      requestBody:
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/ParcelCreateRequest'
+        required: true
+      responses:
+        '201':
+          description: Successful Response
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ParcelResponse'
+        '401':
+          description: Unauthorized
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ErrorResponse'
+        '422':
+          description: Validation Error
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/HTTPValidationError'
+      security:
+      - OAuth2PasswordBearer: []
+  /users/{user_id}/parcels:
+    get:
+      tags:
+      - parcels
+      summary: Получение посылок пользователя
+      operationId: get_user_parcels_users__user_id__parcels_get
+      parameters:
+      - name: user_id
+        in: path
+        required: true
+        schema:
+          type: integer
+          title: User Id
+      responses:
+        '200':
+          description: Successful Response
+          content:
+            application/json:
+              schema:
+                type: array
+                items:
+                  $ref: '#/components/schemas/ParcelResponse'
+                title: Response Get User Parcels Users  User Id  Parcels Get
+        '404':
+          description: User not found
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ErrorResponse'
+        '422':
+          description: Validation Error
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/HTTPValidationError'
+  /deliveries:
+    post:
+      tags:
+      - deliveries
+      summary: Создание доставки от текущего пользователя к получателю (требуется
+        JWT)
+      operationId: create_delivery_deliveries_post
+      requestBody:
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/DeliveryCreateRequest'
+        required: true
+      responses:
+        '201':
+          description: Successful Response
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/DeliveryResponse'
+        '400':
+          description: Invalid request
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ErrorResponse'
+        '401':
+          description: Unauthorized
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ErrorResponse'
+        '403':
+          description: Parcel does not belong to sender
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ErrorResponse'
+        '404':
+          description: Parcel or recipient not found
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ErrorResponse'
+        '422':
+          description: Validation Error
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/HTTPValidationError'
+      security:
+      - OAuth2PasswordBearer: []
+  /deliveries/by-sender/{user_id}:
+    get:
+      tags:
+      - deliveries
+      summary: Получение доставок, где пользователь — отправитель
+      operationId: get_deliveries_by_sender_deliveries_by_sender__user_id__get
+      parameters:
+      - name: user_id
+        in: path
+        required: true
+        schema:
+          type: integer
+          title: User Id
+      responses:
+        '200':
+          description: Successful Response
+          content:
+            application/json:
+              schema:
+                type: array
+                items:
+                  $ref: '#/components/schemas/DeliveryResponse'
+                title: Response Get Deliveries By Sender Deliveries By Sender  User
+                  Id  Get
+        '404':
+          description: User not found
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ErrorResponse'
+        '422':
+          description: Validation Error
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/HTTPValidationError'
+  /deliveries/by-recipient/{user_id}:
+    get:
+      tags:
+      - deliveries
+      summary: Получение доставок, где пользователь — получатель
+      operationId: get_deliveries_by_recipient_deliveries_by_recipient__user_id__get
+      parameters:
+      - name: user_id
+        in: path
+        required: true
+        schema:
+          type: integer
+          title: User Id
+      responses:
+        '200':
+          description: Successful Response
+          content:
+            application/json:
+              schema:
+                type: array
+                items:
+                  $ref: '#/components/schemas/DeliveryResponse'
+                title: Response Get Deliveries By Recipient Deliveries By Recipient  User
+                  Id  Get
+        '404':
+          description: User not found
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ErrorResponse'
+        '422':
+          description: Validation Error
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/HTTPValidationError'
+  /health:
+    get:
+      tags:
+      - system
+      summary: Health
+      operationId: health_health_get
+      responses:
+        '200':
+          description: Successful Response
+          content:
+            application/json:
+              schema:
+                type: object
+                title: Response Health Health Get
+components:
+  schemas:
+    Body_login_auth_login_post:
+      properties:
+        grant_type:
+          anyOf:
+          - type: string
+            pattern: password
+          - type: 'null'
+          title: Grant Type
+        username:
+          type: string
+          title: Username
+        password:
+          type: string
+          title: Password
+        scope:
+          type: string
+          title: Scope
+          default: ''
+        client_id:
+          anyOf:
+          - type: string
+          - type: 'null'
+          title: Client Id
+        client_secret:
+          anyOf:
+          - type: string
+          - type: 'null'
+          title: Client Secret
+      type: object
+      required:
+      - username
+      - password
+      title: Body_login_auth_login_post
+    DeliveryCreateRequest:
+      properties:
+        parcel_id:
+          type: integer
+          exclusiveMinimum: 0.0
+          title: Parcel Id
+          examples:
+          - 1
+        recipient_id:
+          type: integer
+          exclusiveMinimum: 0.0
+          title: Recipient Id
+          examples:
+          - 2
+      type: object
+      required:
+      - parcel_id
+      - recipient_id
+      title: DeliveryCreateRequest
+    DeliveryResponse:
+      properties:
+        id:
+          type: integer
+          title: Id
+          examples:
+          - 1
+        parcel_id:
+          type: integer
+          title: Parcel Id
+          examples:
+          - 1
+        sender_id:
+          type: integer
+          title: Sender Id
+          examples:
+          - 1
+        recipient_id:
+          type: integer
+          title: Recipient Id
+          examples:
+          - 2
+        status:
+          $ref: '#/components/schemas/DeliveryStatus'
+          examples:
+          - created
+        created_at:
+          type: string
+          format: date-time
+          title: Created At
+      type: object
+      required:
+      - id
+      - parcel_id
+      - sender_id
+      - recipient_id
+      - status
+      - created_at
+      title: DeliveryResponse
+    DeliveryStatus:
+      type: string
+      enum:
+      - created
+      - in_transit
+      - delivered
+      - cancelled
+      title: DeliveryStatus
+    ErrorResponse:
+      properties:
+        detail:
+          type: string
+          title: Detail
+          examples:
+          - Resource not found
+      type: object
+      required:
+      - detail
+      title: ErrorResponse
+    HTTPValidationError:
+      properties:
+        detail:
+          items:
+            $ref: '#/components/schemas/ValidationError'
+          type: array
+          title: Detail
+      type: object
+      title: HTTPValidationError
+    LoginRequest:
+      properties:
+        login:
+          type: string
+          title: Login
+          examples:
+          - ivan
+        password:
+          type: string
+          title: Password
+          examples:
+          - secret123
+      type: object
+      required:
+      - login
+      - password
+      title: LoginRequest
+    ParcelCreateRequest:
+      properties:
+        description:
+          type: string
+          maxLength: 255
+          minLength: 1
+          title: Description
+          examples:
+          - Книга
+        weight_kg:
+          type: number
+          maximum: 1000.0
+          exclusiveMinimum: 0.0
+          title: Weight Kg
+          examples:
+          - 1.5
+      type: object
+      required:
+      - description
+      - weight_kg
+      title: ParcelCreateRequest
+    ParcelResponse:
+      properties:
+        id:
+          type: integer
+          title: Id
+          examples:
+          - 1
+        owner_id:
+          type: integer
+          title: Owner Id
+          examples:
+          - 1
+        description:
+          type: string
+          title: Description
+          examples:
+          - Книга
+        weight_kg:
+          type: number
+          title: Weight Kg
+          examples:
+          - 1.5
+        created_at:
+          type: string
+          format: date-time
+          title: Created At
+      type: object
+      required:
+      - id
+      - owner_id
+      - description
+      - weight_kg
+      - created_at
+      title: ParcelResponse
+    RegisterRequest:
+      properties:
+        login:
+          type: string
+          maxLength: 32
+          minLength: 3
+          title: Login
+          examples:
+          - ivan
+        password:
+          type: string
+          maxLength: 128
+          minLength: 6
+          title: Password
+          examples:
+          - secret123
+        first_name:
+          type: string
+          maxLength: 64
+          minLength: 1
+          title: First Name
+          examples:
+          - Ivan
+        last_name:
+          type: string
+          maxLength: 64
+          minLength: 1
+          title: Last Name
+          examples:
+          - Petrov
+      type: object
+      required:
+      - login
+      - password
+      - first_name
+      - last_name
+      title: RegisterRequest
+    TokenResponse:
+      properties:
+        access_token:
+          type: string
+          title: Access Token
+          examples:
+          - eyJhbGciOiJIUzI1NiIsInR5...
+        token_type:
+          type: string
+          title: Token Type
+          default: bearer
+          examples:
+          - bearer
+      type: object
+      required:
+      - access_token
+      title: TokenResponse
+    UserResponse:
+      properties:
+        id:
+          type: integer
+          title: Id
+          examples:
+          - 1
+        login:
+          type: string
+          title: Login
+          examples:
+          - ivan
+        first_name:
+          type: string
+          title: First Name
+          examples:
+          - Ivan
+        last_name:
+          type: string
+          title: Last Name
+          examples:
+          - Petrov
+      type: object
+      required:
+      - id
+      - login
+      - first_name
+      - last_name
+      title: UserResponse
+    ValidationError:
+      properties:
+        loc:
+          items:
+            anyOf:
+            - type: string
+            - type: integer
+          type: array
+          title: Location
+        msg:
+          type: string
+          title: Message
+        type:
+          type: string
+          title: Error Type
+      type: object
+      required:
+      - loc
+      - msg
+      - type
+      title: ValidationError
+  securitySchemes:
+    OAuth2PasswordBearer:
+      type: oauth2
+      flows:
+        password:
+          scopes: {}
+          tokenUrl: /auth/login
